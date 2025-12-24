@@ -13,6 +13,16 @@ src/
 │   └── socket.ts             # Socket.io-client configuration
 └── providers.tsx             # Context Provider for Global Socket State
 
+🧑🏻‍💻Installation & Setup
+         1-Clone & Install
+
+                  Bash
+                  git clone https://github.com/ZAINMUMTAZ999/nextjschatfrontend.git
+                  npm install
+         2 - Development Mode
+                 npm run dev 
+
+
 🚀 Cyberoid Real-Time Engine (Frontend)
        A High-Performance Next.js WebSocket Integration
        This frontend is designed to pair seamlessly with the Cyberoid Backend, focusing on low-latency updates, state synchronization, and a premium user experience.
