@@ -6,7 +6,7 @@ import { io, Socket } from "socket.io-client";
 let socket: Socket | null = null;
 
 // Use your Railway URL here
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = "https://nodejschat-mern.onrender.com";
 
 export const useSocket = (userId: string) => {
   const [isConnected, setIsConnected] = useState(false);

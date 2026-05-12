@@ -57,7 +57,7 @@ const playNotificationSound = () => {
 // --- API Fetchers ---s
 const API_URL =
  
- "http://localhost:5000";
+ "https://nodejschat-mern.onrender.com";
 
 
 const fetchUsers = async (): Promise<DBUser[]> => {
