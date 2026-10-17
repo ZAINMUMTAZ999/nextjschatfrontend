@@ -164,6 +164,22 @@ export default function Home() {
     }
   }, [unreadData]);
 
+  async function enableBrowserNotifications() {
+  if (!("Notification" in window)) {
+    alert("Your browser does not support notifications.");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+
+  if (permission === "granted") {
+    new Notification("Notifications enabled!", {
+      body: "You will be notified when new messages arrive.",
+    });
+  } else {
+    alert("Please allow notifications in your browser settings.");
+  }
+}
   // --- Sorting ---
   const sortedUsers = useMemo(() => {
     return [...allUsers]
@@ -199,8 +215,20 @@ export default function Home() {
     const handleGlobalReceive = (data: Message) => {
       // 1. ALWAYS Play Sound
       // playNotificationSound();
-      if (data.sender !== userId) {
+if (data.sender !== userId) {
   void playNotificationSound();
+
+  if (
+    "Notification" in window &&
+    Notification.permission === "granted" &&
+    document.visibilityState === "hidden"
+  ) {
+    new Notification(`New message from ${data.sender}`, {
+      body: data.content,
+      icon: "/favicon.ico",
+      tag: `chat-${data.sender}`,
+    });
+  }
 }
 
       // 2. Always Bump User to Top
@@ -277,9 +305,14 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
-          <div className="fixed bottom-4 right-4 z-[60]">
-      <EnableNotifications userId={userId} />
-    </div>
+   <div className="fixed bottom-4 right-4 z-[60]">
+  <button
+    onClick={enableBrowserNotifications}
+    className="rounded-lg bg-blue-600 px-4 py-2 text-white shadow-lg"
+  >
+    Enable Notifications
+  </button>
+</div>
       <Sidebar
         userId={userId}
         users={sortedUsers} 
