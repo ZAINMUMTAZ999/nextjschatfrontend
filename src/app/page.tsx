@@ -103,12 +103,14 @@ export default function Home() {
   //   enabled: isRegistered, 
   //   refetchInterval: 15000, 
   // });
-  const { data: usersData } = useQuery({
-  queryKey: ['users'],
+const { data: usersData } = useQuery({
+  queryKey: ["users"],
   queryFn: fetchUsers,
   enabled: isRegistered,
   refetchInterval: false,
   refetchOnWindowFocus: false,
+  refetchOnMount: false,
+  retry: false,
 });
 
   const { data: unreadData } = useQuery({
@@ -164,22 +166,26 @@ export default function Home() {
     }
   }, [unreadData]);
 
-  async function enableBrowserNotifications() {
+const enableBrowserNotifications = async () => {
   if (!("Notification" in window)) {
     alert("Your browser does not support notifications.");
     return;
   }
 
-  const permission = await Notification.requestPermission();
+  try {
+    const permission = await Notification.requestPermission();
 
-  if (permission === "granted") {
-    new Notification("Notifications enabled!", {
-      body: "You will be notified when new messages arrive.",
-    });
-  } else {
-    alert("Please allow notifications in your browser settings.");
+    if (permission === "granted") {
+      new Notification("Notifications enabled!", {
+        body: "You will receive notifications when new messages arrive.",
+      });
+    } else {
+      alert("Notifications were blocked. Allow them in your browser settings.");
+    }
+  } catch (error) {
+    console.error("Notification permission error:", error);
   }
-}
+};
   // --- Sorting ---
   const sortedUsers = useMemo(() => {
     return [...allUsers]
