@@ -221,20 +221,16 @@ const enableBrowserNotifications = async () => {
     const handleGlobalReceive = (data: Message) => {
       // 1. ALWAYS Play Sound
       // playNotificationSound();
-if (data.sender !== userId) {
-  void playNotificationSound();
-
-  if (
-    "Notification" in window &&
-    Notification.permission === "granted" &&
-    document.visibilityState === "hidden"
-  ) {
-    new Notification(`New message from ${data.sender}`, {
-      body: data.content,
-      icon: "/favicon.ico",
-      tag: `chat-${data.sender}`,
-    });
-  }
+if (
+  data.sender !== userId &&
+  "Notification" in window &&
+  Notification.permission === "granted" &&
+  document.visibilityState === "hidden"
+) {
+  new Notification(`New message from ${data.sender}`, {
+    body: data.content,
+    icon: "/favicon.ico",
+  });
 }
 
       // 2. Always Bump User to Top
@@ -312,12 +308,7 @@ if (data.sender !== userId) {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
    <div className="fixed bottom-4 right-4 z-[60]">
-  <button
-    onClick={enableBrowserNotifications}
-    className="rounded-lg bg-blue-600 px-4 py-2 text-white shadow-lg"
-  >
-    Enable Notifications
-  </button>
+ 
 </div>
       <Sidebar
         userId={userId}
