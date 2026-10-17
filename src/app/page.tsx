@@ -6,11 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useSocket } from "./hooks/useSocket";
 import { useChat, Message } from "./hooks/useChat";
 import LoginScreen from "./components/LoginScreen";
-
 import Sidebar from "./components/Sidebar";
 import ChatWindow from "./components/ChatWindow";
 import { AnimatePresence, motion } from "framer-motion";
-import { useNotificationSound } from "./hooks/useNotificationSound";
 
 // --- Types ---
 export interface DBUser {
@@ -32,29 +30,29 @@ interface WindowWithWebkit extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
-// const playNotificationSound = () => {
-//   try {
-//     const AudioContextClass = window.AudioContext || (window as unknown as WindowWithWebkit).webkitAudioContext;
-//     if (!AudioContextClass) return;
+const playNotificationSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as WindowWithWebkit).webkitAudioContext;
+    if (!AudioContextClass) return;
 
-//     const audioCtx = new AudioContextClass();
-//     const oscillator = audioCtx.createOscillator();
-//     const gainNode = audioCtx.createGain();
+    const audioCtx = new AudioContextClass();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
     
-//     oscillator.connect(gainNode);
-//     gainNode.connect(audioCtx.destination);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
     
-//     oscillator.type = 'sine';
-//     oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
-//     gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-//     gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
     
-//     oscillator.start();
-//     oscillator.stop(audioCtx.currentTime + 0.5);
-//   } catch (e) {
-//     console.error("Audio play failed");
-//   }
-// };
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.5);
+  } catch (e) {
+    console.error("Audio play failed");
+  }
+};
 
 // --- API Fetchers ---s
 const API_URL =
@@ -74,17 +72,14 @@ const fetchUnread = async (userId: string) => {
   return res.json();
 };
 
+import { useNotificationSound } from "./hooks/useNotificationSound";
 export default function Home() {
   const [userId, setUserId] = useState("");
   const [isRegistered, setIsRegistered] = useState(false);
   const [recipientId, setRecipientId] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-// const { messages, sendMessage, isTyping } = useChat(socket, userId, recipientId);
-const {
-  soundEnabled,
-  enableSound,
-  playNotificationSound,
-} = useNotificationSound();
+  
+
   const [allUsers, setAllUsers] = useState<DBUser[]>([]);
   const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
@@ -93,6 +88,11 @@ const {
   const hasShownOfflineNotification = useRef(false);
 
   const { socket } = useSocket(isRegistered ? userId : "");
+  const {
+  soundEnabled,
+  enableSound,
+  playNotificationSound,
+} = useNotificationSound();
   const { messages, sendMessage, isTyping } = useChat(socket, userId, recipientId);
 
   // --- React Query ---
@@ -194,53 +194,49 @@ const {
       });
     };
 
- 
-const handleGlobalReceive = (data: Message) => {
-  // Ignore messages sent by the current user.
-  if (data.sender === userId) return;
-
-  // Play the enabled notification sound.
+    // --- FIX: Logic Split for Toast vs Unread ---
+    const handleGlobalReceive = (data: Message) => {
+      // 1. ALWAYS Play Sound
+      // playNotificationSound();
+      if (data.sender !== userId) {
   void playNotificationSound();
+}
 
-  // Move the sender to the top of the list.
-  setAllUsers((prev) =>
-    prev.map((u) =>
-      u.username === data.sender
-        ? { ...u, lastMessageAt: Date.now() }
-        : u
-    )
-  );
+      // 2. Always Bump User to Top
+      setAllUsers((prev) => 
+        prev.map((u) => 
+          u.username === data.sender 
+            ? { ...u, lastMessageAt: Date.now() } 
+            : u
+        )
+      );
 
-  // Update unread count when the chat isn't selected.
-  if (data.sender !== recipientId) {
-    if (document.visibilityState === "hidden") {
-      document.title = "(1) New Message";
-    }
+      // Only process notifications if I am not the sender
+      if (data.sender !== userId) {
+        
+        // 3. UNREAD LOGIC: Only update if I am NOT in that chat
+        if (data.sender !== recipientId) {
+          if (document.visibilityState === "hidden") {
+            document.title = `(1) New Message`;
+          }
+          setUnreadCounts((prev) => ({
+            ...prev,
+            [data.sender]: (prev[data.sender] || 0) + 1,
+          }));
+        }
 
-    setUnreadCounts((prev) => ({
-      ...prev,
-      [data.sender]: (prev[data.sender] || 0) + 1,
-    }));
-  }
-
-  // Show the toast notification.
-  setNotifications((prev) => [
-    ...prev,
-    {
-      id: Date.now(),
-      message: data.content,
-      sender: data.sender,
-    },
-  ]);
-
-  setTimeout(() => {
-    setNotifications((prev) => prev.slice(1));
-  }, 4000);
-};
-
+        // 4. TOAST LOGIC: Show ALWAYS (even if in same chat)
+        setNotifications((prev) => [
+          ...prev,
+          { id: Date.now(), message: data.content, sender: data.sender },
+        ]);
+        
+        setTimeout(() => setNotifications((prev) => prev.slice(1)), 4000);
+      }
+    };
 
     socket.on("onlineUsersList", handleOnlineList);
-    socket.on("userStatseusChange", handleStatusChange);
+    socket.on("userStatusChange", handleStatusChange);
     socket.on("receiveMessage", handleGlobalReceive);
 
     socket.emit("join", userId);
@@ -250,7 +246,7 @@ const handleGlobalReceive = (data: Message) => {
       socket.off("userStatusChange", handleStatusChange);
       socket.off("receiveMessage", handleGlobalReceive);
     };
-  }, [socket, userId, recipientId, playNotificationSound]);// Ensure recipientId is in dependency array so unread logic works
+  }, [socket, userId, recipientId, playNotificationSound]); // Ensure recipientId is in dependency array so unread logic works
 
   const handleSelectUser = (id: string) => {
     if (id === "System") {
@@ -280,15 +276,6 @@ const handleGlobalReceive = (data: Message) => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
-      
-<button
-  type="button"
-  onClick={() => void enableSound()}
-  className="fixed bottom-5 right-5 z-[60] rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700"
->
-  {soundEnabled ? "Sound Enabled ✓" : "Enable Sound"}
-</button>
-
       <Sidebar
         userId={userId}
         users={sortedUsers} 
