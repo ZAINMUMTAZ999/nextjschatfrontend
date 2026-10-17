@@ -89,12 +89,19 @@ export default function Home() {
   const { messages, sendMessage, isTyping } = useChat(socket, userId, recipientId);
 
   // --- React Query ---
+  // const { data: usersData } = useQuery({
+  //   queryKey: ['users'],
+  //   queryFn: fetchUsers,
+  //   enabled: isRegistered, 
+  //   refetchInterval: 15000, 
+  // });
   const { data: usersData } = useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
-    enabled: isRegistered, 
-    refetchInterval: 15000, 
-  });
+  queryKey: ['users'],
+  queryFn: fetchUsers,
+  enabled: isRegistered,
+  refetchInterval: false,
+  refetchOnWindowFocus: false,
+});
 
   const { data: unreadData } = useQuery({
     queryKey: ['unread', userId],
