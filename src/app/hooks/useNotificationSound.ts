@@ -1,38 +1,55 @@
 
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export function useNotificationSound() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const unlockedRef = useRef(false);
 
-  const enableSound = useCallback(async () => {
-    try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio("/sounds/message-notification.mp3");
-        audioRef.current.preload = "auto";
+  useEffect(() => {
+    const audio = new Audio("/sounds/message-notification.mp3");
+    audio.preload = "auto";
+    audioRef.current = audio;
+
+    const unlockAudio = async () => {
+      try {
+        audio.muted = true;
+        await audio.play();
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+        unlockedRef.current = true;
+
+        window.removeEventListener("pointerdown", unlockAudio);
+        window.removeEventListener("keydown", unlockAudio);
+      } catch {
+        audio.muted = false;
       }
+    };
 
-      const audio = audioRef.current;
-      audio.currentTime = 0;
-      await audio.play();
-      setSoundEnabled(true);
-    } catch (error) {
-      console.error("Could not play notification sound:", error);
-    }
+    window.addEventListener("pointerdown", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+      audio.pause();
+      audioRef.current = null;
+    };
   }, []);
 
   const playNotificationSound = useCallback(async () => {
-    if (!soundEnabled || !audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio || !unlockedRef.current) return;
 
     try {
-      audioRef.current.currentTime = 0;
-      await audioRef.current.play();
+      audio.currentTime = 0;
+      await audio.play();
     } catch (error) {
-      console.error("Could not play notification sound:", error);
+      console.error("Notification sound failed:", error);
     }
-  }, [soundEnabled]);
+  }, []);
 
-  return { soundEnabled, enableSound, playNotificationSound };
+  return { playNotificationSound };
 }

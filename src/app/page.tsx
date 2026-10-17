@@ -73,6 +73,7 @@ const fetchUnread = async (userId: string) => {
 };
 
 import { useNotificationSound } from "./hooks/useNotificationSound";
+// import { useNotificationSound } from "./hooks/useNotificationSound";
 export default function Home() {
   const [userId, setUserId] = useState("");
   const [isRegistered, setIsRegistered] = useState(false);
@@ -89,8 +90,8 @@ export default function Home() {
 
   const { socket } = useSocket(isRegistered ? userId : "");
   const {
-  soundEnabled,
-  enableSound,
+  // soundEnabled,
+  // enableSound,
   playNotificationSound,
 } = useNotificationSound();
   const { messages, sendMessage, isTyping } = useChat(socket, userId, recipientId);
