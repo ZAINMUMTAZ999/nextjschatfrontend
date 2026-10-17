@@ -71,7 +71,7 @@ const fetchUnread = async (userId: string) => {
   if (!res.ok) throw new Error("Failed to fetch unread");
   return res.json();
 };
-
+import EnableNotifications from "./components/EnableNotifications";
 import { useNotificationSound } from "./hooks/useNotificationSound";
 // import { useNotificationSound } from "./hooks/useNotificationSound";
 export default function Home() {
@@ -277,6 +277,9 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
+          <div className="fixed bottom-4 right-4 z-[60]">
+      <EnableNotifications userId={userId} />
+    </div>
       <Sidebar
         userId={userId}
         users={sortedUsers} 
